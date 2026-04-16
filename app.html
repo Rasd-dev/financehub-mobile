@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FinanceHub">
+<meta name="theme-color" content="#050c18">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<title>FinanceHub PRO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   DESIGN SYSTEM — Dark Luxury · Bloomberg-inspired
+═══════════════════════════════════════════════════ */
+:root{
+  /* profundidade */
+  --d0:#050c18;
+  --d1:#080f1e;
+  --d2:#0c1628;
+  --d3:#101d33;
+  --d4:#162540;
+  --d5:#1c2e4e;
+
+  /* vidro */
+  --g1:rgba(255,255,255,.035);
+  --g2:rgba(255,255,255,.06);
+  --g3:rgba(255,255,255,.10);
+
+  /* bordas */
+  --b1:rgba(255,255,255,.07);
+  --b2:rgba(255,255,255,.13);
+  --b3:rgba(255,255,255,.2);
+
+  /* texto */
+  --t0:#f0f7ff;
+  --t1:#c8ddf0;
+  --t2:#7a9bc0;
+  --t3:#3a5878;
+  --t4:#1e3248;
+
+  /* acento */
+  --ac:#3b82f6;
+  --ac-g:rgba(59,130,246,.16);
+  --ac-b:rgba(59,130,246,.07);
+
+  /* up/down */
+  --up:#10b981;
+  --up-g:rgba(16,185,129,.14);
+  --dn:#f43f5e;
+  --dn-g:rgba(244,63,94,.14);
+
+  /* ouro */
+  --au:#f59e0b;
+  --au-g:rgba(245,158,11,.14);
+
+  /* typo */
+  --fd:'Syne',sans-serif;
+  --fs:'DM Sans',sans-serif;
+  --fm:'DM Mono',monospace;
+
+  /* layout */
+  --hh:60px;
+  --th:32px;
+  --nh:64px;
+  --st:env(safe-area-inset-top,0px);
+  --sb:env(safe-area-inset-bottom,0px);
+}
+
+/* ─── RESET ───────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;overscroll-behavior:none;background:var(--d0)}
+body{
+  background:var(--d0);color:var(--t1);
+  font-family:var(--fs);font-size:14px;line-height:1.55;
+  min-height:100vh;
+  padding-top:calc(var(--hh) + var(--th) + var(--st));
+  padding-bottom:calc(var(--nh) + var(--sb) + 12px);
+  overscroll-behavior:none;
+}
+a{color:var(--ac);text-decoration:none}
+::-webkit-scrollbar{display:none}
+
+/* ─── TEXTURA SUTIL ───────────────────────────── */
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%,rgba(59,130,246,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%,rgba(16,185,129,.04) 0%,transparent 60%);
+}
+
+/* ─── HEADER ──────────────────────────────────── */
+.hdr{
+  position:fixed;top:0;left:0;right:0;z-index:600;
+  height:calc(var(--hh) + var(--st));
+  padding-top:var(--st);
+  background:linear-gradient(180deg,rgba(5,12,24,.97) 0%,rgba(5,12,24,.88) 100%);
+  backdrop-filter:blur(28px) saturate(1.5);
+  -webkit-backdrop-filter:blur(28px) saturate(1.5);
+  border-bottom:1px solid var(--b1);
+  display:flex;align-items:center;
+  padding-left:18px;padding-right:18px;
+  justify-content:space-between;
+}
+.hdr-brand{display:flex;align-items:center;gap:11px}
+.hdr-logo{
+  width:36px;height:36px;border-radius:11px;
+  background:linear-gradient(145deg,#1e40af,#3b82f6);
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 0 1px rgba(59,130,246,.3),0 6px 18px rgba(59,130,246,.25);
+}
+.hdr-name{font-family:var(--fd);font-weight:800;font-size:17px;color:var(--t0);letter-spacing:-.4px;line-height:1}
+.hdr-tag{font-family:var(--fm);font-size:8px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.live{
+  display:flex;align-items:center;gap:5px;
+  background:var(--up-g);border:1px solid rgba(16,185,129,.22);
+  border-radius:20px;padding:4px 10px;
+  font-family:var(--fm);font-size:8px;color:#34d399;letter-spacing:1.2px;text-transform:uppercase;
+}
+.ldot{width:5px;height:5px;background:#34d399;border-radius:50%;animation:p 2s ease-in-out infinite;box-shadow:0 0 5px #34d399}
+@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.7)}}
+.clk{font-family:var(--fm);font-size:12px;color:var(--t2);letter-spacing:.5px}
+
+/* ─── TAPE ────────────────────────────────────── */
+.tape{
+  position:fixed;
+  top:calc(var(--hh) + var(--st));
+  left:0;right:0;z-index:500;
+  height:var(--th);overflow:hidden;
+  background:linear-gradient(90deg,#07101f 0%,#0a1628 50%,#07101f 100%);
+  border-bottom:1px solid var(--b1);
+}
+.tape::before,.tape::after{
+  content:'';position:absolute;top:0;bottom:0;width:28px;z-index:5;pointer-events:none;
+}
+.tape::before{left:0;background:linear-gradient(90deg,#07101f,transparent)}
+.tape::after{right:0;background:linear-gradient(270deg,#07101f,transparent)}
+.tape-r{
+  display:inline-flex;white-space:nowrap;align-items:center;height:var(--th);
+  animation:sc 70s linear infinite;
+}
+.tape-r.paused{animation-play-state:paused}
+@keyframes sc{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ti{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 14px;height:var(--th);
+  border-right:1px solid rgba(255,255,255,.04);
+  font-family:var(--fm);font-size:10.5px;
+}
+.tn{color:var(--t3);font-size:8.5px;letter-spacing:.6px;text-transform:uppercase}
+.tp{color:var(--t0);font-weight:500}
+.tc{font-size:9.5px;font-weight:500}
+.tc.up{color:#34d399}.tc.dn{color:#fb7185}.tc.nt{color:var(--t4)}
+
+/* ─── PAGES / ABAS ────────────────────────────── */
+.page{display:none;padding:14px 13px 6px;animation:fu .22s ease both;position:relative;z-index:1}
+.page.active{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── CARDS ───────────────────────────────────── */
+.card{
+  background:var(--d2);border:1px solid var(--b1);border-radius:18px;
+  overflow:hidden;margin-bottom:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.45);
+}
+
+/* ─── HERO GRID ───────────────────────────────── */
+.hero-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
+  padding:14px 13px 4px;position:relative;z-index:1;
+}
+.hc{
+  background:var(--d2);border:1px solid var(--b1);border-radius:16px;
+  padding:14px 14px 12px;position:relative;overflow:hidden;
+  transition:transform .15s,box-shadow .15s;
+}
+.hc:active{transform:scale(.96)}
+.hc::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,var(--ac),transparent);opacity:.4;
+}
+.hc.up-t::before{background:linear-gradient(90deg,var(--up),transparent);opacity:.5}
+.hc.dn-t::before{background:linear-gradient(90deg,var(--dn),transparent);opacity:.5}
+.hc::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse 70% 60% at 0% 0%,rgba(255,255,255,.025),transparent);
+}
+.hc-lbl{font-family:var(--fm);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:6px}
+.hc-val{font-family:var(--fd);font-size:20px;font-weight:700;color:var(--t0);line-height:1.1;margin-bottom:5px;letter-spacing:-.5px}
+.hc-chg{
+  font-family:var(--fm);font-size:10px;font-weight:500;
+  padding:3px 8px;border-radius:6px;display:inline-flex;align-items:center;
+}
+.hc-chg.up{color:#34d399;background:var(--up-g)}
+.hc-chg.dn{color:#fb7185;background:var(--dn-g)}
+.hc-chg.nt{color:var(--t3);background:var(--g1)}
+/* sparkline placeholder */
+.hc-spark{
+  position:absolute;bottom:10px;right:12px;opacity:.2;
+  font-size:22px;line-height:1;
+}
+
+/* ─── CARD HEAD ───────────────────────────────── */
+.ch{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 16px;border-bottom:1px solid var(--b1);
+  background:linear-gradient(135deg,var(--d3),var(--d2));
+}
+.ch-ico{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#1d4ed8,#3b82f6);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(59,130,246,.25),0 3px 10px rgba(59,130,246,.2);
+}
+.ch-title{font-family:var(--fd);font-weight:700;font-size:13.5px;color:var(--t0);flex:1}
+.ch-time{font-family:var(--fm);font-size:9px;color:var(--ac);letter-spacing:.3px}
+
+/* status */
+.ss{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:5px 16px;border-bottom:1px solid var(--b1);background:var(--g1);
+  flex-wrap:wrap;gap:4px;
+}
+.stxt{font-size:9.5px;color:var(--t3);font-family:var(--fm)}
+.srcs{display:flex;gap:12px}
+.src{display:flex;align-items:center;gap:3px;font-size:9px;color:var(--t3);font-family:var(--fm)}
+.sdot{width:5px;height:5px;border-radius:50%;background:var(--t4);transition:all .5s;flex-shrink:0}
+.sdot.ok{background:var(--up);box-shadow:0 0 5px rgba(16,185,129,.5)}
+.sdot.warn{background:var(--au)}.sdot.err{background:var(--dn)}
+
+/* ─── SECTION TITLE ───────────────────────────── */
+.sec{
+  padding:7px 16px;font-family:var(--fm);font-size:8.5px;
+  letter-spacing:2px;text-transform:uppercase;color:var(--ac);
+  background:linear-gradient(90deg,var(--ac-b),transparent);
+  border-bottom:1px solid var(--b1);border-top:1px solid var(--b1);
+  display:flex;align-items:center;gap:8px;
+}
+.sec::after{content:'';flex:1;height:1px;background:var(--b2)}
+
+/* ─── ROWS ────────────────────────────────────── */
+.row{
+  display:flex;align-items:center;padding:11px 16px;
+  border-bottom:1px solid rgba(255,255,255,.03);transition:background .12s;
+}
+.row:active{background:var(--g1)}
+.row:last-child{border-bottom:none}
+.rn{flex:1;font-size:12.5px;color:var(--t1);font-weight:400;padding-right:6px;line-height:1.3}
+.rc{
+  font-family:var(--fm);font-size:10.5px;font-weight:500;
+  min-width:74px;text-align:right;margin-right:10px;
+  padding:3px 7px;border-radius:6px;
+}
+.rc.up{color:#34d399;background:var(--up-g)}
+.rc.dn{color:#fb7185;background:var(--dn-g)}
+.rc.nt{color:var(--t3);background:var(--g1)}
+.rp{font-family:var(--fm);font-size:11px;color:var(--t2);text-align:right;min-width:88px}
+.rp strong{color:var(--t0);font-weight:500}
+.ifoot{padding:9px 16px;font-size:9px;color:var(--t4);border-top:1px solid var(--b1);text-align:center;font-family:var(--fm)}
+
+/* ─── SKELETON ────────────────────────────────── */
+.sk{background:linear-gradient(90deg,var(--d3) 25%,var(--d4) 50%,var(--d3) 75%);background-size:200% 100%;animation:sh 1.6s infinite;border-radius:4px;display:inline-block}
+@keyframes sh{from{background-position:200% 0}to{background-position:-200% 0}}
+
+/* ─── PORTFOLIO ───────────────────────────────── */
+.ph{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 16px;border-bottom:1px solid var(--b1);
+  background:linear-gradient(135deg,var(--d3),var(--d2));
+}
+.ph-ico{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#065f46,#10b981);
+  display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;
+  box-shadow:0 0 0 1px rgba(16,185,129,.25),0 3px 10px rgba(16,185,129,.2);
+}
+.ph-title{font-family:var(--fd);font-weight:800;font-size:14px;color:var(--t0);flex:1}
+.pvia{padding:8px 16px;font-size:11px;color:var(--t2);border-bottom:1px solid var(--b1)}
+.pvia a{color:var(--ac);font-weight:600}
+
+.pit{
+  border-bottom:1px solid rgba(255,255,255,.03);
+  padding:15px 16px 13px;position:relative;transition:background .12s;
+}
+.pit:last-child{border-bottom:none}
+.pit:active{background:var(--g1)}
+.pit::before{
+  content:'';position:absolute;left:0;top:15px;bottom:15px;
+  width:2px;background:linear-gradient(180deg,var(--ac),transparent);
+  border-radius:0 2px 2px 0;opacity:.6;
+}
+.pt{font-family:var(--fd);font-weight:700;font-size:14px;color:var(--t0);margin-bottom:5px}
+.pm{
+  font-size:11px;color:var(--t2);margin-bottom:7px;
+  line-height:1.5;display:flex;align-items:flex-start;gap:4px;
+}
+.pm-i{flex-shrink:0;font-size:11px;margin-top:1px;opacity:.7}
+.pch{
+  font-size:9.5px;color:var(--t3);margin-bottom:5px;
+  display:flex;align-items:center;gap:4px;
+  font-family:var(--fm);text-transform:uppercase;letter-spacing:.8px;
+}
+.tks{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tk{
+  font-family:var(--fm);font-size:10px;color:#93c5fd;font-weight:500;
+  background:var(--ac-b);border:1px solid rgba(59,130,246,.2);
+  border-radius:5px;padding:2px 7px;white-space:nowrap;
+}
+.tk:active{background:var(--ac-g);border-color:rgba(59,130,246,.4)}
+.pst{
+  display:flex;align-items:center;gap:5px;
+  font-size:10.5px;color:#34d399;font-weight:500;
+  margin:8px 0 10px;font-family:var(--fm);
+}
+.psd{width:5px;height:5px;background:#34d399;border-radius:50%;box-shadow:0 0 4px rgba(52,211,153,.5)}
+.plk{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  font-size:12px;color:var(--t1);font-weight:600;
+  padding:10px 16px;background:var(--g2);border:1px solid var(--b2);
+  border-radius:11px;font-family:var(--fd);letter-spacing:.3px;
+  width:100%;transition:all .15s;
+}
+.plk:active{background:var(--ac);color:#fff;border-color:var(--ac)}
+.pep{font-style:italic;color:var(--t4);font-size:10.5px;font-family:var(--fm)}
+.pft{padding:8px 16px;font-size:9px;color:var(--t4);border-top:1px solid var(--b1);text-align:center;font-family:var(--fm)}
+
+/* ─── BOTTOM NAV ──────────────────────────────── */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:600;
+  height:calc(var(--nh) + var(--sb));
+  padding-bottom:var(--sb);
+  background:rgba(5,12,24,.97);
+  backdrop-filter:blur(28px) saturate(1.6);
+  -webkit-backdrop-filter:blur(28px) saturate(1.6);
+  border-top:1px solid var(--b1);
+  display:flex;align-items:stretch;
+  box-shadow:0 -10px 40px rgba(0,0,0,.5);
+}
+.nb{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:4px;border:none;background:transparent;cursor:pointer;
+  color:var(--t4);font-family:var(--fd);padding:6px 4px;
+  position:relative;transition:color .2s;
+}
+.nb.active{color:var(--ac)}
+.nb::after{
+  content:'';position:absolute;top:0;left:20%;right:20%;
+  height:2px;background:var(--ac);border-radius:0 0 3px 3px;
+  transform:scaleX(0);transition:transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+.nb.active::after{transform:scaleX(1)}
+.nb-ico{font-size:22px;line-height:1;transition:transform .2s}
+.nb.active .nb-ico{transform:scale(1.12) translateY(-1px)}
+.nb-lbl{font-size:9.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+
+/* ─── FAB ─────────────────────────────────────── */
+.fab{
+  position:fixed;
+  bottom:calc(var(--nh) + var(--sb) + 14px);
+  right:15px;z-index:550;
+  width:46px;height:46px;border-radius:23px;
+  background:linear-gradient(145deg,#1d4ed8,#60a5fa);
+  color:#fff;border:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 24px rgba(59,130,246,.45),0 0 0 1px rgba(59,130,246,.3);
+  cursor:pointer;transition:transform .15s,box-shadow .15s;
+}
+.fab:active{transform:scale(.9);box-shadow:0 2px 10px rgba(59,130,246,.3)}
+.fab.spin svg{animation:rt 1s linear infinite}
+@keyframes rt{to{transform:rotate(360deg)}}
+
+/* ─── TOAST ───────────────────────────────────── */
+.toast{
+  position:fixed;
+  bottom:calc(var(--nh) + var(--sb) + 68px);
+  left:50%;transform:translateX(-50%) translateY(16px);
+  z-index:999;
+  background:var(--d3);border:1px solid var(--b2);color:var(--t1);
+  border-radius:24px;padding:9px 22px;
+  font-size:11.5px;font-family:var(--fm);white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  opacity:0;transition:all .32s cubic-bezier(.34,1.56,.64,1);pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ─── INSTALL BANNER ──────────────────────────── */
+.ib{
+  display:none;margin:0 13px 12px;
+  padding:13px 14px;
+  background:linear-gradient(135deg,var(--d3),var(--d4));
+  border:1px solid var(--b2);border-radius:16px;
+  align-items:center;gap:10px;
+  box-shadow:0 6px 24px rgba(0,0,0,.35);
+}
+.ib.show{display:flex}
+.ib-i{font-size:26px;flex-shrink:0}
+.ib-t{flex:1;font-size:11.5px;line-height:1.45;color:var(--t1)}
+.ib-t b{display:block;font-family:var(--fd);font-size:13px;color:var(--t0);margin-bottom:2px}
+.ib-btn{
+  background:linear-gradient(145deg,#1d4ed8,#3b82f6);border:none;
+  color:#fff;border-radius:9px;padding:8px 14px;
+  font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;
+  font-family:var(--fd);box-shadow:0 3px 10px rgba(59,130,246,.3);
+}
+.ib-x{background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;padding:0;line-height:1;flex-shrink:0}
+
+/* ─── MEDIA ───────────────────────────────────── */
+@media(max-width:360px){
+  .hc-val{font-size:17px}
+  .hero-grid{gap:8px}
+  .hdr-name{font-size:15px}
+}
+@media(min-width:480px){
+  .hero-grid{grid-template-columns:repeat(4,1fr)}
+  .hc-val{font-size:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ HEADER ════════ -->
+<div class="hdr">
+  <div class="hdr-brand">
+    <div class="hdr-logo">📊</div>
+    <div>
+      <div class="hdr-name">FinanceHub PRO</div>
+      <div class="hdr-tag">Mercados · Tempo Real</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="live"><div class="ldot"></div>AO VIVO</div>
+    <div class="clk" id="clock">--:--</div>
+  </div>
+</div>
+
+<!-- ════════ TICKER ════════ -->
+<div class="tape">
+  <div class="tape-r" id="tape">
+    <span style="color:var(--t4);font-family:var(--fm);font-size:10px;padding:0 16px">Carregando…</span>
+  </div>
+</div>
+
+<!-- ════════ INSTALL BANNER ════════ -->
+<div class="ib" id="ib">
+  <span class="ib-i">📲</span>
+  <div class="ib-t"><b>Instalar como App</b>Acesso rápido da tela inicial</div>
+  <button class="ib-btn" onclick="installApp()">Instalar</button>
+  <button class="ib-x" onclick="closeIb()">✕</button>
+</div>
+
+<!-- ════════ ABA: MERCADOS ════════ -->
+<div class="page active" id="pg-m">
+
+  <!-- Hero cards -->
+  <div class="hero-grid" id="hgrid"></div>
+
+  <!-- Indicadores completos -->
+  <div class="card">
+    <div class="ch">
+      <div class="ch-ico">📈</div>
+      <div class="ch-title">Principais Indicadores</div>
+      <div class="ch-time" id="ct">--:--</div>
+    </div>
+    <div class="ss">
+      <span class="stxt" id="stxt">Conectando…</span>
+      <div class="srcs">
+        <div class="src"><div class="sdot" id="dY"></div>yfinance</div>
+        <div class="src"><div class="sdot" id="dC"></div>Cripto</div>
+        <div class="src"><div class="sdot" id="dF"></div>Câmbio</div>
+      </div>
+    </div>
+    <div id="ibody"></div>
+    <div class="ifoot">Dados com atraso · Uso pessoal · Não constitui recomendação de investimento</div>
+  </div>
+</div>
+
+<!-- ════════ ABA: CARTEIRAS ════════ -->
+<div class="page" id="pg-c">
+  <div class="card">
+    <div class="ph">
+      <div class="ph-ico">📋</div>
+      <div class="ph-title">Resumo Mensal — <span id="rdate"></span></div>
+    </div>
+    <div class="pvia">
+      Carteiras recomendadas via
+      <a href="https://renovainvest.com.br" target="_blank" rel="noopener">Renova Invest</a>
+    </div>
+    <div id="pbody"></div>
+    <div class="pft" id="pft"></div>
+  </div>
+</div>
+
+<!-- ════════ BOTTOM NAV ════════ -->
+<div class="bnav">
+  <button class="nb active" id="nb-m" onclick="tab('m')">
+    <span class="nb-ico">📈</span>
+    <span class="nb-lbl">Mercados</span>
+  </button>
+  <button class="nb" id="nb-c" onclick="tab('c')">
+    <span class="nb-ico">📋</span>
+    <span class="nb-lbl">Carteiras</span>
+  </button>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="refresh()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+</button>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* ── CONFIG ─────────────────────────────────── */
+const REFRESH  = 60;
+const LOCAL    = '/api/quotes';
+const PROXIES  = [
+  u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
+  u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+];
+const SYMS = ['YM=F','ES=F','NQ=F','^BVSP','000001.SS','^N225','^HSI','^KS11','^FTSE','^GDAXI','^FCHI','FTSEMIB.MI','CL=F','BZ=F','GC=F','SI=F'];
+const YFEP = s=>`https://query2.finance.yahoo.com/v8/finance/quote?symbols=${s}&fields=regularMarketPrice,regularMarketChangePercent`;
+
+/* ── STATE ───────────────────────────────────── */
+const S={i:{},c:{},f:{},loading:false,cd:REFRESH};
+
+/* ── HERO ────────────────────────────────────── */
+const HERO=[
+  {tk:'ES=F',   lb:'S&P 500'},
+  {tk:'^BVSP',  lb:'Ibovespa'},
+  {tk:'BRL=X',  lb:'Dólar',fx:true},
+  {tk:'BTC-USD',lb:'Bitcoin',cr:true},
+];
+
+/* ── INDICATOR SECTIONS ──────────────────────── */
+const IND=[
+  {t:'EUA',r:[
+    {tk:'YM=F', n:'Dow Jones Futuro (EUA)'},
+    {tk:'ES=F', n:'S&P 500 Futuro (EUA)'},
+    {tk:'NQ=F', n:'Nasdaq Futuro (EUA)'},
+  ]},
+  {t:'Brasil',r:[
+    {tk:'^BVSP',   n:'Ibovespa'},
+    {tk:'BRL=X',   n:'Dólar (USD/BRL)',f:true},
+    {tk:'EURBRL=X',n:'Euro (EUR/BRL)', f:true},
+  ]},
+  {t:'Ásia',r:[
+    {tk:'000001.SS',n:'Shanghai SE (China)'},
+    {tk:'^N225',    n:'Nikkei (Japão)'},
+    {tk:'^HSI',     n:'Hang Seng (Hong Kong)'},
+    {tk:'^KS11',    n:'Kospi (Coreia do Sul)'},
+  ]},
+  {t:'Europa',r:[
+    {tk:'^FTSE',    n:'FTSE 100 (Reino Unido)'},
+    {tk:'^GDAXI',   n:'DAX (Alemanha)'},
+    {tk:'^FCHI',    n:'CAC 40 (França)'},
+    {tk:'FTSEMIB.MI',n:'FTSE MIB (Itália)'},
+  ]},
+  {t:'Commodities',r:[
+    {tk:'CL=F',n:'Petróleo WTI'},
+    {tk:'BZ=F',n:'Petróleo Brent'},
+    {tk:'GC=F',n:'Ouro'},
+    {tk:'SI=F',n:'Prata'},
+  ]},
+  {t:'Cripto',r:[
+    {tk:'BTC-USD',n:'Bitcoin', cr:true},
+    {tk:'ETH-USD',n:'Ethereum',cr:true},
+  ]},
+];
+
+/* ── PORTFOLIOS ──────────────────────────────── */
+(function(){
+  const n=new Date();
+  document.getElementById('rdate').textContent=n.toLocaleDateString('pt-BR');
+  const ms=n.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  window.MES=ms.charAt(0).toUpperCase()+ms.slice(1);
+  document.getElementById('pft').textContent='Gerado em '+n.toLocaleDateString('pt-BR')+' · Uso pessoal · Não constitui recomendação de investimento.';
+})();
+
+const PORTS=[
+  {t:'BTG Ações',m:`Carteira Recomendada de Ações 10SIM BTG Pactual [${window.MES}]`,k:['ITUB4','ROXO34','AXIA3','RENT3','PRIO3','ENEV3','MOTV3','STOC34','ALOS3','AURA33'],u:'https://renovainvest.com.br/blog/carteira-recomendada-acoes-btg/'},
+  {t:'BTG Dividendos',m:`Carteira Recomendada de Dividendos BTG Pactual [${window.MES}]`,k:['PETR4','ITUB4','BBDC4','AXIA3','CXSE3','EQTL3','PRIO3','CPLE3','CSMG3','ALOS3','AURA33','DIRR3','ODPV3'],u:'https://renovainvest.com.br/blog/carteira-recomendada-de-dividendos-btg-pactual/'},
+  {t:'BTG FIIs',m:`Carteira Recomendada de FIIs BTG Pactual [${window.MES}]`,k:['BTCI11','KNCR11','KNIP11','RBRR11','RBRY11','MCCI11','VILG11','BRCO11','BTLG11','BRCR11','PVBI11','HGBS11','GZIT11','HSML11','TRXF11'],u:'https://renovainvest.com.br/blog/carteira-recomendada-fii-btg-pactual/'},
+  {t:'BTG Small Caps',m:`Carteira Recomendada de Small Caps BTG Pactual [${window.MES}]`,k:['AURA33','CSMG3','SAPR11','GGPS3','SMFT3','TTEN3','PGMN3','CEAB3','TEND3','VTRU3'],u:'https://renovainvest.com.br/blog/carteira-recomendada-de-small-caps-do-btg-pactual-marco-2021/'},
+  {t:'BTG BDRs',m:`Carteira Recomendada de Ações Internacionais BTG Pactual [${window.MES}]`,k:['NVDC34','AAPL34','GOGL34','MSFT34','AMZO34','TSMC34','AVGO34','WALM34','MUTC34','BOAC34','RYTT34','GSGI34'],u:'https://renovainvest.com.br/blog/carteira-recomendada-de-bdr-btg-pactual/'},
+  {t:'BTG ETFs',m:`Carteira Recomendada de ETFs BTG Pactual [${window.MES}]`,k:['LLFT11','DEBB11','PACC11','PACG11','PACB11','LTNB11','IBOB11','CMDB11','SMAB11','XFIX11','HGBR11','SPXB11','XINA11','HASH11','GOLD11'],u:'https://renovainvest.com.br/blog/carteira-recomendada-de-etfs-btg-pactual/'},
+  {t:'BTG Cripto',m:'Carteira Recomendada de Criptoativos BTG Pactual [Fev 2026]',k:['COIN50'],u:'https://renovainvest.com.br/blog/carteira-recomendada-criptoativos-btg-pactual/'},
+  {t:'Einvestidor',m:'Carteiras recomendadas: seletividade após rali do Ibovespa',k:['ALOS3','AXIA6','BPAC11','CYRE3','ITUB4','PETR4','SBSP3','SUZB3','VALE3','VBBR3','KLBN11','RENT3','PRIO3','LREN3','HYPE3'],u:'https://einvestidor.estadao.com.br/investimentos/carteiras-recomendadas-de-acoes/'},
+  {t:'InvestNews FIIs',m:'FIIs mais indicados: fundos imobiliários de tijolo',k:['HSML11','BRCO11','VILG11','PVBI11','KNCR11'],u:'https://investnews.com.br/financas/fiis-mais-indicados/'},
+  {t:'Ion Itaú',m:'Carteiras recomendadas de Ações, FIIs, Renda Fixa e BDRs',k:[],u:'https://ion.itau.com.br/'},
+  {t:'Suno Research',m:'Melhores investimentos para 2026',k:['VAMO3','SIMH3','MLAS3','BBAS3','SOJA3'],u:'https://www.suno.com.br/artigos/melhores-acoes/'},
+  {t:'InfoMoney FIIs',m:'FIIs de papel devem manter protagonismo em 2026',k:['HGCR11','KNHY11','KNIP11','KNSC11','KNUQ11','MCCI11','RBRR11','RBRY11','VCJR11'],u:'https://www.infomoney.com.br/mercados/fundos-imobiliarios/'},
+];
+
+/* ── FORMAT ──────────────────────────────────── */
+const FXS=new Set(['BRL=X','EURBRL=X']),USDS=new Set(['CL=F','BZ=F','GC=F','SI=F','BTC-USD','ETH-USD']);
+function fp(tk,v){
+  if(v==null||isNaN(v))return null;
+  if(FXS.has(tk)) return'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:4,maximumFractionDigits:4});
+  if(tk==='BTC-USD')return'US$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  if(USDS.has(tk))return'US$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' pts';
+}
+function fc(v){if(v==null||isNaN(v))return null;return(v>=0?'▲ +':'▼ ')+Math.abs(v).toFixed(2)+'%';}
+function cc(v){return v==null?'nt':v>=0?'up':'dn';}
+function gd(tk,cr,f){return cr?S.c[tk]:f?S.f[tk]:S.i[tk];}
+
+/* ── FETCH ───────────────────────────────────── */
+async function loadLocal(){
+  try{
+    const r=await fetch(LOCAL,{signal:AbortSignal.timeout(5000)});
+    if(!r.ok)throw 0;
+    const d=await r.json();
+    if(!d.data||!Object.keys(d.data).length)throw 0;
+    dot('dY','ok');return d.data;
+  }catch{return null;}
+}
+async function _yf(pFn,s){
+  const r=await fetch(pFn(YFEP(s)),{signal:AbortSignal.timeout(12000)});
+  if(!r.ok)throw 0;
+  const t=await r.text();
+  if(!t||t.trimStart()[0]!=='{')throw 0;
+  const d=JSON.parse(t),res=d?.quoteResponse?.result||[];
+  if(!res.length)throw 0;
+  const o={};
+  for(const q of res)if(q.regularMarketPrice!=null)o[q.symbol]={price:q.regularMarketPrice,chg:q.regularMarketChangePercent??0};
+  if(!Object.keys(o).length)throw 0;
+  return o;
+}
+async function loadProxy(){
+  try{const r=await Promise.any(PROXIES.map(p=>_yf(p,SYMS.join(','))));dot('dY','warn');return r;}
+  catch{dot('dY','err');return{};}
+}
+async function loadCG(){
+  try{
+    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true',{signal:AbortSignal.timeout(10000)});
+    const d=await r.json();
+    if(!d.bitcoin?.usd)throw 0;
+    dot('dC','ok');
+    return{'BTC-USD':{price:d.bitcoin.usd,chg:d.bitcoin.usd_24h_change??0},'ETH-USD':{price:d.ethereum.usd,chg:d.ethereum.usd_24h_change??0}};
+  }catch{dot('dC','err');return{};}
+}
+async function loadFx(){
+  try{
+    const r=await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL',{signal:AbortSignal.timeout(10000)});
+    const d=await r.json();
+    const u=parseFloat(d.USDBRL?.bid||0);
+    if(!u)throw 0;
+    dot('dF','ok');
+    return{'BRL=X':{price:u,chg:parseFloat(d.USDBRL?.pctChange||0)},'EURBRL=X':{price:parseFloat(d.EURBRL?.bid||0),chg:parseFloat(d.EURBRL?.pctChange||0)}};
+  }catch{dot('dF','err');return{};}
+}
+
+async function fetchAll(){
+  if(S.loading)return;
+  S.loading=true;
+  document.getElementById('fab').classList.add('spin');
+  document.getElementById('stxt').textContent='Buscando dados…';
+  const[loc,cg,fx]=await Promise.all([loadLocal(),loadCG(),loadFx()]);
+  let ind;
+  if(loc){
+    ind=loc;
+    if(cg['BTC-USD'])ind['BTC-USD']=cg['BTC-USD'];
+    if(cg['ETH-USD'])ind['ETH-USD']=cg['ETH-USD'];
+  }else{
+    ind=await loadProxy();
+  }
+  S.i=ind;S.c=cg;S.f=fx;S.cd=REFRESH;
+  const ts=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
+  document.getElementById('ct').textContent=ts;
+  document.getElementById('stxt').textContent='Atualizado às '+ts+' (BRT)';
+  renderHero();renderInd();renderTape();
+  toast('✅ Dados atualizados');
+  S.loading=false;
+  document.getElementById('fab').classList.remove('spin');
+}
+
+/* ── RENDER HERO ─────────────────────────────── */
+function renderHero(){
+  document.getElementById('hgrid').innerHTML=HERO.map(h=>{
+    const d=gd(h.tk,h.cr,h.fx);
+    const p=d?.price,c=d?.chg,cl=cc(c);
+    const bg=cl==='up'?'up-t':cl==='dn'?'dn-t':'';
+    return`<div class="hc ${bg}">
+      <div class="hc-lbl">${h.lb}</div>
+      <div class="hc-val">${p!=null?fp(h.tk,p):sk(75,16)}</div>
+      <div class="hc-chg ${cl}">${c!=null?fc(c):sk(58,14)}</div>
+      <div class="hc-spark">${cl==='up'?'📈':cl==='dn'?'📉':'▬'}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── RENDER IND ──────────────────────────────── */
+function sk(w,h){return`<span class="sk" style="width:${w}px;height:${h}px;vertical-align:middle"></span>`;}
+function renderInd(){
+  let h='';
+  for(const s of IND){
+    h+=`<div class="sec">${s.t}</div>`;
+    for(const r of s.r){
+      const d=gd(r.tk,r.cr,r.f);
+      const p=d?.price,c=d?.chg,cl=cc(c);
+      h+=`<div class="row">
+        <div class="rn">${r.n}</div>
+        <div class="rc ${cl}">${c!=null?fc(c):sk(65,12)}</div>
+        <div class="rp">${p!=null?`<strong>${fp(r.tk,p)}</strong>`:sk(82,12)}</div>
+      </div>`;
+    }
+  }
+  document.getElementById('ibody').innerHTML=h;
+}
+
+/* ── RENDER TAPE ─────────────────────────────── */
+function renderTape(){
+  const items=[];
+  for(const s of IND)
+    for(const r of s.r){
+      const d=gd(r.tk,r.cr,r.f);
+      if(!d?.price)continue;
+      const cl=cc(d.chg);
+      const lb=r.n.replace(/ Futuro/,'').replace(/ \(.*\)/,'').substring(0,14);
+      items.push(`<div class="ti"><span class="tn">${lb}</span><span class="tp">${fp(r.tk,d.price)}</span><span class="tc ${cl}">${fc(d.chg)}</span></div>`);
+    }
+  if(!items.length)return;
+  const el=document.getElementById('tape');
+  el.innerHTML=items.join('')+items.join('');
+  el.style.animationDuration=Math.max(40,items.length*6)+'s';
+}
+
+/* ── RENDER PORTFOLIOS ───────────────────────── */
+function renderPorts(){
+  document.getElementById('pbody').innerHTML=PORTS.map(p=>{
+    const kh=p.k.length>0
+      ?`<div class="tks">${p.k.map(t=>`<span class="tk">${t}</span>`).join('')}</div>`
+      :`<span class="pep">(composição não informada)</span>`;
+    return`<div class="pit">
+      <div class="pt">${p.t.replace(/</g,'&lt;')}</div>
+      <div class="pm"><span class="pm-i">📌</span><span>${p.m.replace(/</g,'&lt;')}</span></div>
+      <div class="pch">🔴 <span style="margin-left:4px">Composição</span></div>
+      ${kh}
+      <div class="pst"><div class="psd"></div>Sem mudanças na composição</div>
+      <a href="${encodeURI(p.u)}" target="_blank" rel="noopener noreferrer" class="plk">
+        Ver carteira completa &nbsp;→
+      </a>
+    </div>`;
+  }).join('');
+}
+
+/* ── UTILS ───────────────────────────────────── */
+function dot(id,st){const e=document.getElementById(id);if(e)e.className='sdot '+st;}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+function refresh(){S.cd=REFRESH;fetchAll();}
+function tab(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+id).classList.add('active');
+  document.getElementById('nb-'+id).classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function tick(){
+  document.getElementById('clock').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
+  S.cd=Math.max(0,S.cd-1);
+  if(S.cd===0)fetchAll();
+}
+
+/* ── PWA ─────────────────────────────────────── */
+let _dp=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();_dp=e;document.getElementById('ib').classList.add('show');});
+function installApp(){if(!_dp)return;_dp.prompt();_dp.userChoice.then(()=>{_dp=null;closeIb();});}
+function closeIb(){document.getElementById('ib').classList.remove('show');}
+window.addEventListener('appinstalled',()=>{closeIb();toast('✅ App instalado com sucesso!');});
+
+/* ── INIT ────────────────────────────────────── */
+renderPorts();
+
+// Skeleton hero
+document.getElementById('hgrid').innerHTML=HERO.map(()=>`
+  <div class="hc">
+    <div class="hc-lbl">&nbsp;</div>
+    <div class="hc-val">${sk(80,16)}</div>
+    <div class="hc-chg nt" style="margin-top:5px">${sk(58,14)}</div>
+  </div>`).join('');
+
+// Skeleton indicators
+document.getElementById('ibody').innerHTML=IND.map(s=>
+  `<div class="sec">${s.t}</div>`+
+  s.r.map(()=>`<div class="row">
+    <div class="rn">${sk(128,11)}</div>
+    <div class="rc nt">${sk(60,12)}</div>
+    <div class="rp">${sk(82,11)}</div>
+  </div>`).join('')
+).join('');
+
+setInterval(tick,1000);
+tick();
+fetchAll();
+</script>
+</body>
+</html>
