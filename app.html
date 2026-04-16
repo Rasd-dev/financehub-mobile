@@ -616,9 +616,19 @@ function cc(v){return v==null?'nt':v>=0?'up':'dn';}
 function gd(tk,cr,f){return cr?S.c[tk]:f?S.f[tk]:S.i[tk];}
 
 /* ── FETCH ───────────────────────────────────── */
+/* ── FETCH COMPATÍVEL COM TODOS OS CELULARES ── */
+function fetchTimeout(url, ms){
+  /* Compatível com iOS/Android antigos — sem AbortSignal.timeout() */
+  const ctrl = new AbortController();
+  const tid  = setTimeout(()=>ctrl.abort(), ms);
+  return fetch(url, {signal: ctrl.signal})
+    .then(r=>{ clearTimeout(tid); return r; })
+    .catch(e=>{ clearTimeout(tid); throw e; });
+}
+
 async function loadLocal(){
   try{
-    const r=await fetch(LOCAL,{signal:AbortSignal.timeout(90000)});
+    const r=await fetchTimeout(LOCAL, 90000);
     if(!r.ok)throw 0;
     const d=await r.json();
     if(!d.data||!Object.keys(d.data).length)throw 0;
@@ -626,7 +636,7 @@ async function loadLocal(){
   }catch{return null;}
 }
 async function _yf(pFn,s){
-  const r=await fetch(pFn(YFEP(s)),{signal:AbortSignal.timeout(12000)});
+  const r=await fetchTimeout(pFn(YFEP(s)), 12000);
   if(!r.ok)throw 0;
   const t=await r.text();
   if(!t||t.trimStart()[0]!=='{')throw 0;
@@ -643,7 +653,7 @@ async function loadProxy(){
 }
 async function loadCG(){
   try{
-    const r=await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true',{signal:AbortSignal.timeout(10000)});
+    const r=await fetchTimeout('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', 12000);
     const d=await r.json();
     if(!d.bitcoin?.usd)throw 0;
     dot('dC','ok');
@@ -652,7 +662,7 @@ async function loadCG(){
 }
 async function loadFx(){
   try{
-    const r=await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL',{signal:AbortSignal.timeout(10000)});
+    const r=await fetchTimeout('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL', 12000);
     const d=await r.json();
     const u=parseFloat(d.USDBRL?.bid||0);
     if(!u)throw 0;
