@@ -91,8 +91,15 @@ def atualizar_cache() -> None:
 
 
 def loop_atualizacao() -> None:
-    atualizar_cache()
+    # Tenta carregar até 3 vezes na inicialização (Render pode ser lento)
+    for tentativa in range(3):
+        atualizar_cache()
+        if _cache["success"] > 0:
+            break
+        log.warning("Tentativa %d falhou, tentando novamente...", tentativa + 1)
+        time.sleep(5)
     _startup_done.set()
+    log.info("Servidor pronto com %d/%d símbolos", _cache["success"], _cache["total"])
     while True:
         time.sleep(CACHE_TTL)
         atualizar_cache()

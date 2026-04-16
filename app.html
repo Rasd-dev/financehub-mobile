@@ -618,7 +618,7 @@ function gd(tk,cr,f){return cr?S.c[tk]:f?S.f[tk]:S.i[tk];}
 /* ── FETCH ───────────────────────────────────── */
 async function loadLocal(){
   try{
-    const r=await fetch(LOCAL,{signal:AbortSignal.timeout(5000)});
+    const r=await fetch(LOCAL,{signal:AbortSignal.timeout(90000)});
     if(!r.ok)throw 0;
     const d=await r.json();
     if(!d.data||!Object.keys(d.data).length)throw 0;
@@ -665,7 +665,14 @@ async function fetchAll(){
   if(S.loading)return;
   S.loading=true;
   document.getElementById('fab').classList.add('spin');
-  document.getElementById('stxt').textContent='Buscando dados…';
+  document.getElementById('stxt').textContent='Conectando ao servidor…';
+  // Mostrar aviso de espera após 5 segundos
+  window._wt1 = setTimeout(()=>{
+    if(S.loading) document.getElementById('stxt').textContent='⏳ Servidor acordando, aguarde ~30s…';
+  }, 5000);
+  window._wt2 = setTimeout(()=>{
+    if(S.loading) document.getElementById('stxt').textContent='⏳ Carregando cotações (pode levar até 60s na primeira vez)…';
+  }, 20000);
   const[loc,cg,fx]=await Promise.all([loadLocal(),loadCG(),loadFx()]);
   let ind;
   if(loc){
@@ -680,6 +687,7 @@ async function fetchAll(){
   document.getElementById('ct').textContent=ts;
   document.getElementById('stxt').textContent='Atualizado às '+ts+' (BRT)';
   renderHero();renderInd();renderTape();
+  clearTimeout(window._wt1); clearTimeout(window._wt2);
   toast('✅ Dados atualizados');
   S.loading=false;
   document.getElementById('fab').classList.remove('spin');
