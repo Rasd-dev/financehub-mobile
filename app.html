@@ -609,104 +609,139 @@ function fc(v){if(v==null||isNaN(v))return null;return(v>=0?'▲ +':'▼ ')+Math
 function cc(v){return v==null?'nt':v>=0?'up':'dn';}
 function gd(tk,cr,f){return cr?S.c[tk]:f?S.f[tk]:S.i[tk];}
 
-/* ── FETCH ───────────────────────────────────── */
+/* ── FETCH — TradingView como fonte de dados ─── */
 function fetchTimeout(url, ms, opts){
   const ctrl = new AbortController();
   const tid  = setTimeout(()=>ctrl.abort(), ms);
-  return fetch(url, {signal:ctrl.signal, ...(opts||{})})
+  return fetch(url, {signal:ctrl.signal,...(opts||{})})
     .then(r=>{ clearTimeout(tid); return r; })
     .catch(e=>{ clearTimeout(tid); throw e; });
 }
 
-/* Servidor Render — só tenta se não for file:// */
+/* ── TradingView Widget Data ─────────────────── */
+// Mapa: nosso ticker → símbolo TradingView
+const TV_MAP = {
+  'YM=F':       'CBOT:YM1!',
+  'ES=F':       'CME_MINI:ES1!',
+  'NQ=F':       'CME_MINI:NQ1!',
+  '^BVSP':      'BMFBOVESPA:IBOV',
+  '000001.SS':  'SSE:000001',
+  '^N225':      'TVC:NI225',
+  '^HSI':       'TVC:HSI',
+  '^KS11':      'KRX:KOSPI',
+  '^FTSE':      'TVC:UKX',
+  '^GDAXI':     'XETR:DAX',
+  '^FCHI':      'EURONEXT:PX1',
+  'FTSEMIB.MI': 'MIL:FTSEMIB',
+  'CL=F':       'NYMEX:CL1!',
+  'BZ=F':       'NYMEX:BB1!',
+  'GC=F':       'COMEX:GC1!',
+  'SI=F':       'COMEX:SI1!',
+};
+
+let _tvReady = false;
+let _tvData  = {};
+
+function loadTradingView(){
+  return new Promise((resolve)=>{
+    const syms = Object.values(TV_MAP);
+    const container = document.getElementById('tv-widgets');
+    container.innerHTML = '';
+
+    // Widget de market quotes — retorna JSON via postMessage
+    const cfg = {
+      "symbols": syms.map(s=>({
+        "proName": s,
+        "title":   s.split(':')[1]||s
+      })),
+      "showSymbolLogo": false,
+      "isTransparent": true,
+      "displayMode": "compact",
+      "colorTheme": "dark",
+      "locale": "en",
+      "autosize": true
+    };
+
+    // Usa a API REST pública do TradingView para cotações
+    // Endpoint: scanner que retorna preço + variação sem auth
+    const tvSyms = syms.join('%2C');
+    const url = `https://scanner.tradingview.com/global/scan`;
+    const body = JSON.stringify({
+      "symbols": {"tickers": syms, "query": {"types": []}},
+      "columns": ["close","change_abs","change"]
+    });
+
+    fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: body
+    })
+    .then(r=>r.json())
+    .then(d=>{
+      const rows = d?.data || [];
+      const inv  = Object.fromEntries(Object.entries(TV_MAP).map(([k,v])=>[v,k]));
+      rows.forEach(row=>{
+        const sym   = row.s;
+        const close = row.d?.[0];
+        const chg   = row.d?.[2]; // % change
+        if(close && close > 0){
+          const ourTicker = inv[sym];
+          if(ourTicker) _tvData[ourTicker] = {price: close, chg: +(chg||0)};
+        }
+      });
+      _tvReady = Object.keys(_tvData).length > 0;
+      dot('dY', _tvReady ? 'ok' : 'err');
+      resolve(_tvData);
+    })
+    .catch(()=>{ dot('dY','err'); resolve({}); });
+  });
+}
+
+/* Servidor Render — fallback se TV falhar */
 async function loadLocal(){
   if(!LOCAL) return null;
   try{
     const r = await fetchTimeout(LOCAL, 8000);
     if(!r.ok) throw 0;
     const d = await r.json();
-    if(d.data && Object.keys(d.data).length > 0){ dot('dY','ok'); return d.data; }
+    if(d.data && Object.keys(d.data).length > 0) return d.data;
     throw 0;
   }catch{ return null; }
 }
 
-/* Stooq — API CSV pública, sem CORS, sem auth, funciona em cloud e mobile */
-const STOOQ_MAP = {
-  'YM=F':'ym.f','ES=F':'es.f','NQ=F':'nq.f',
-  '^BVSP':'bvsp.b','000001.SS':'000001.ss',
-  '^N225':'n225.jp','^HSI':'hsi.hk','^KS11':'ks11.ko',
-  '^FTSE':'ftse.uk','^GDAXI':'dax.de','^FCHI':'cac.fr','FTSEMIB.MI':'mib.mi',
-  'CL=F':'cl.f','BZ=F':'bz.f','GC=F':'gc.f','SI=F':'si.f'
-};
-
-async function loadStooq(){
-  const resultado = {};
-  const promises = Object.entries(STOOQ_MAP).map(async ([ticker, sym])=>{
-    try{
-      const url = `https://stooq.com/q/l/?s=${sym}&f=sd2t2ohlcv&h&e=csv`;
-      const r = await fetchTimeout(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`, 12000
-      );
-      if(!r.ok) throw 0;
-      const text = await r.text();
-      const lines = text.trim().split('
-');
-      if(lines.length < 2) throw 0;
-      const cols = lines[1].split(',');
-      // CSV: Symbol,Date,Time,Open,High,Low,Close,Volume
-      const close = parseFloat(cols[6]);
-      const open  = parseFloat(cols[3]);
-      if(!close || close <= 0 || close === open && open === 0) throw 0;
-      const chg = open > 0 ? ((close - open) / open) * 100 : 0;
-      resultado[ticker] = { price: round6(close), chg: round4(chg) };
-    }catch{}
-  });
-  await Promise.all(promises);
-  const n = Object.keys(resultado).length;
-  if(n > 0){ dot('dY','ok'); } else { dot('dY','err'); }
-  return resultado;
-}
-
-function round6(v){ return Math.round(v*1e6)/1e6; }
-function round4(v){ return Math.round(v*1e4)/1e4; }
-
 /* Cripto — CoinGecko */
 async function loadCG(){
   try{
-    const r = await fetchTimeout(
-      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true',
-      12000
-    );
+    const r = await fetchTimeout('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true',12000);
     const d = await r.json();
     if(!d.bitcoin?.usd) throw 0;
     dot('dC','ok');
     return{
-      'BTC-USD':{price:d.bitcoin.usd,  chg:round4(d.bitcoin.usd_24h_change??0)},
-      'ETH-USD':{price:d.ethereum.usd, chg:round4(d.ethereum.usd_24h_change??0)}
+      'BTC-USD':{price:d.bitcoin.usd, chg:+(d.bitcoin.usd_24h_change??0).toFixed(4)},
+      'ETH-USD':{price:d.ethereum.usd,chg:+(d.ethereum.usd_24h_change??0).toFixed(4)}
     };
   }catch{ dot('dC','err'); return {}; }
 }
 
-/* Câmbio — AwesomeAPI + Frankfurter */
+/* Câmbio — AwesomeAPI */
 async function loadFx(){
   try{
-    const r = await fetchTimeout('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL', 10000);
+    const r = await fetchTimeout('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL',10000);
     const d = await r.json();
     const u = parseFloat(d.USDBRL?.bid||0);
     if(!u) throw 0;
     dot('dF','ok');
     return{
-      'BRL=X':   {price:round6(u),                              chg:round4(parseFloat(d.USDBRL?.pctChange||0))},
-      'EURBRL=X':{price:round6(parseFloat(d.EURBRL?.bid||0)),  chg:round4(parseFloat(d.EURBRL?.pctChange||0))}
+      'BRL=X':   {price:u,                              chg:parseFloat(d.USDBRL?.pctChange||0)},
+      'EURBRL=X':{price:parseFloat(d.EURBRL?.bid||0),  chg:parseFloat(d.EURBRL?.pctChange||0)}
     };
   }catch{}
   try{
-    const r = await fetchTimeout('https://api.frankfurter.app/latest?from=USD&to=BRL', 8000);
+    const r = await fetchTimeout('https://api.frankfurter.app/latest?from=USD&to=BRL',8000);
     const d = await r.json();
-    const u = d?.rates?.BRL;
-    if(!u) throw 0;
+    if(!d?.rates?.BRL) throw 0;
     dot('dF','warn');
-    return{'BRL=X':{price:round6(u),chg:0},'EURBRL=X':{price:0,chg:0}};
+    return{'BRL=X':{price:d.rates.BRL,chg:0},'EURBRL=X':{price:0,chg:0}};
   }catch{ dot('dF','err'); return {}; }
 }
 
@@ -716,35 +751,34 @@ async function fetchAll(){
   document.getElementById('fab').classList.add('spin');
   document.getElementById('stxt').textContent='Conectando…';
 
-  const cgPromise = loadCG();
-  const fxPromise = loadFx();
+  // Busca tudo em paralelo
+  const [tv, cg, fx] = await Promise.all([
+    loadTradingView(),
+    loadCG(),
+    loadFx()
+  ]);
 
-  let ind = null;
+  let ind = tv && Object.keys(tv).length > 0 ? tv : null;
 
-  // 1) Servidor Render
-  if(!IS_FILE){
-    document.getElementById('stxt').textContent='🌐 Buscando do servidor…';
+  // Fallback: servidor Render
+  if(!ind){
+    document.getElementById('stxt').textContent='⏳ Buscando do servidor…';
     ind = await loadLocal();
   }
 
-  // 2) Stooq via proxy (funciona em mobile e cloud)
-  if(!ind || !Object.keys(ind).length){
-    document.getElementById('stxt').textContent='⏳ Buscando cotações…';
-    ind = await loadStooq();
-  }
+  // Injeta câmbio e cripto
+  const merged = {...(ind||{}), ...fx};
+  if(cg['BTC-USD']) merged['BTC-USD']=cg['BTC-USD'];
+  if(cg['ETH-USD']) merged['ETH-USD']=cg['ETH-USD'];
 
-  const [cg, fx] = await Promise.all([cgPromise, fxPromise]);
-  if(cg['BTC-USD']) (ind=ind||{})['BTC-USD']=cg['BTC-USD'];
-  if(cg['ETH-USD']) (ind=ind||{})['ETH-USD']=cg['ETH-USD'];
-
-  S.i=ind||{}; S.c=cg; S.f=fx; S.cd=REFRESH;
+  S.i=merged; S.c=cg; S.f=fx; S.cd=REFRESH;
 
   const ts = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
   document.getElementById('ct').textContent=ts;
-  const ok = Object.keys(S.i).length;
+  const ok = Object.keys(ind||{}).length;
   document.getElementById('stxt').textContent = ok
     ? 'Atualizado às '+ts+' (BRT)'
-    : '⚠️ Sem dados — tente novamente em alguns instantes';
+    : '⚠️ Sem dados — tente novamente';
 
   renderHero(); renderInd(); renderTape();
   toast(ok ? '✅ Dados atualizados' : '⚠️ Sem dados de índices');
@@ -875,5 +909,9 @@ setInterval(tick,1000);
 tick();
 fetchAll();
 </script>
+
+<!-- TradingView widgets invisíveis — fonte de dados -->
+<div id="tv-widgets" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none;left:-9999px;top:-9999px"></div>
+
 </body>
 </html>
