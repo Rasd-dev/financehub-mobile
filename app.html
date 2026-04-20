@@ -521,15 +521,21 @@ body::after{
 'use strict';
 
 /* ── CONFIG ─────────────────────────────────── */
-const REFRESH  = 60;
-const LOCAL    = '/api/quotes';
+const REFRESH   = 60;
+// Detecta se está rodando via servidor HTTP ou direto como arquivo local
+const IS_FILE   = location.protocol === 'file:';
+const LOCAL     = IS_FILE ? null : `${location.protocol}//${location.host}/api/quotes`;
+
+// Proxies CORS — funcionam tanto em file:// quanto em http://
 const PROXIES  = [
   u=>`https://corsproxy.io/?${encodeURIComponent(u)}`,
   u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
   u=>`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
 ];
 const SYMS = ['YM=F','ES=F','NQ=F','^BVSP','000001.SS','^N225','^HSI','^KS11','^FTSE','^GDAXI','^FCHI','FTSEMIB.MI','CL=F','BZ=F','GC=F','SI=F'];
-const YFEP = s=>`https://query2.finance.yahoo.com/v8/finance/quote?symbols=${s}&fields=regularMarketPrice,regularMarketChangePercent`;
+// Yahoo Finance v7 (sem cookie) — query1 e query2 em paralelo
+const YFEP  = s=>`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${s}&fields=regularMarketPrice,regularMarketChangePercent`;
+const YFEP2 = s=>`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${s}&fields=regularMarketPrice,regularMarketChangePercent`;
 
 /* ── STATE ───────────────────────────────────── */
 const S={i:{},c:{},f:{},loading:false,cd:REFRESH};
@@ -616,89 +622,194 @@ function cc(v){return v==null?'nt':v>=0?'up':'dn';}
 function gd(tk,cr,f){return cr?S.c[tk]:f?S.f[tk]:S.i[tk];}
 
 /* ── FETCH ───────────────────────────────────── */
-/* ── FETCH COMPATÍVEL COM TODOS OS CELULARES ── */
-function fetchTimeout(url, ms){
-  /* Compatível com iOS/Android antigos — sem AbortSignal.timeout() */
+function fetchTimeout(url, ms, opts){
   const ctrl = new AbortController();
   const tid  = setTimeout(()=>ctrl.abort(), ms);
-  return fetch(url, {signal: ctrl.signal})
+  return fetch(url, {signal:ctrl.signal, ...(opts||{})})
     .then(r=>{ clearTimeout(tid); return r; })
     .catch(e=>{ clearTimeout(tid); throw e; });
 }
 
-async function loadLocal(){
-  try{
-    const r=await fetchTimeout(LOCAL, 90000);
-    if(!r.ok)throw 0;
-    const d=await r.json();
-    if(!d.data||!Object.keys(d.data).length)throw 0;
-    dot('dY','ok');return d.data;
-  }catch{return null;}
+/* Espera servidor ficar pronto (cold start pode demorar ~30s) */
+async function waitServerReady(maxWait=90000){
+  const READY = LOCAL.replace('/api/quotes','/api/ready');
+  const t0 = Date.now();
+  while(Date.now()-t0 < maxWait){
+    try{
+      const r = await fetchTimeout(READY, 4000);
+      if(!r.ok) break;
+      const d = await r.json();
+      if(d.ready && d.success > 0) return true;
+      // Ainda inicializando — aguarda 3s e tenta de novo
+      document.getElementById('stxt').textContent=
+        `⏳ Servidor iniciando… (${Math.round((Date.now()-t0)/1000)}s)`;
+      await new Promise(res=>setTimeout(res, 3000));
+    }catch{ break; }
+  }
+  return false;
 }
-async function _yf(pFn,s){
-  const r=await fetchTimeout(pFn(YFEP(s)), 12000);
-  if(!r.ok)throw 0;
-  const t=await r.text();
-  if(!t||t.trimStart()[0]!=='{')throw 0;
-  const d=JSON.parse(t),res=d?.quoteResponse?.result||[];
-  if(!res.length)throw 0;
-  const o={};
-  for(const q of res)if(q.regularMarketPrice!=null)o[q.symbol]={price:q.regularMarketPrice,chg:q.regularMarketChangePercent??0};
-  if(!Object.keys(o).length)throw 0;
+
+/* 1) Servidor Python — com retry em cold start */
+async function loadLocal(){
+  if(!LOCAL) return null;
+  try{
+    // Primeira tentativa rápida
+    const r = await fetchTimeout(LOCAL, 6000);
+    if(!r.ok) throw 0;
+    const d = await r.json();
+    if(d.data && Object.keys(d.data).length > 0){
+      dot('dY','ok'); return d.data;
+    }
+    // Cache vazio = servidor ainda inicializando → polling
+    if(d.ready === false){
+      document.getElementById('stxt').textContent='⏳ Servidor iniciando, aguarde…';
+      const ok = await waitServerReady(90000);
+      if(ok){
+        const r2 = await fetchTimeout(LOCAL, 6000);
+        if(!r2.ok) throw 0;
+        const d2 = await r2.json();
+        if(d2.data && Object.keys(d2.data).length > 0){
+          dot('dY','ok'); return d2.data;
+        }
+      }
+    }
+    throw 0;
+  }catch{ return null; }
+}
+
+/* Parser Yahoo Finance */
+function _parseYF(text){
+  if(!text || text.trimStart()[0]!=='{') throw 0;
+  const d = JSON.parse(text);
+  const res = d?.quoteResponse?.result || d?.finance?.result || [];
+  if(!res.length) throw 0;
+  const o = {};
+  for(const q of res)
+    if(q.regularMarketPrice != null)
+      o[q.symbol] = {price: q.regularMarketPrice, chg: q.regularMarketChangePercent??0};
+  if(!Object.keys(o).length) throw 0;
   return o;
 }
-async function loadProxy(){
-  try{const r=await Promise.any(PROXIES.map(p=>_yf(p,SYMS.join(','))));dot('dY','warn');return r;}
-  catch{dot('dY','err');return{};}
+
+/* 2) Yahoo Finance via proxy — mais confiável em mobile que direto */
+async function _yfViaProxy(pFn, syms){
+  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&fields=regularMarketPrice,regularMarketChangePercent`;
+  const r = await fetchTimeout(pFn(url), 15000);
+  if(!r.ok) throw 0;
+  return _parseYF(await r.text());
 }
+
+/* 3) Yahoo Finance direto (funciona em alguns mobile/carriers) */
+async function loadYFDirect(){
+  const syms = SYMS.join(',');
+  const urls = [YFEP(syms), YFEP2(syms)];
+  try{
+    const result = await Promise.any(urls.map(async url=>{
+      const r = await fetchTimeout(url, 10000, {
+        headers:{'Accept':'application/json'}
+      });
+      if(!r.ok) throw 0;
+      return _parseYF(await r.text());
+    }));
+    dot('dY','ok'); return result;
+  }catch{ return null; }
+}
+
+/* 4) Proxy CORS público — último recurso */
+async function loadProxy(){
+  try{
+    const result = await Promise.any(PROXIES.map(p=>_yfViaProxy(p, SYMS.join(','))));
+    dot('dY','warn'); return result;
+  }catch{ dot('dY','err'); return {}; }
+}
+
+/* Cripto — CoinGecko (CORS aberto, funciona em qualquer contexto) */
 async function loadCG(){
   try{
-    const r=await fetchTimeout('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true', 12000);
-    const d=await r.json();
-    if(!d.bitcoin?.usd)throw 0;
+    const r = await fetchTimeout(
+      'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum&vs_currencies=usd&include_24hr_change=true',
+      12000
+    );
+    const d = await r.json();
+    if(!d.bitcoin?.usd) throw 0;
     dot('dC','ok');
-    return{'BTC-USD':{price:d.bitcoin.usd,chg:d.bitcoin.usd_24h_change??0},'ETH-USD':{price:d.ethereum.usd,chg:d.ethereum.usd_24h_change??0}};
-  }catch{dot('dC','err');return{};}
+    return{
+      'BTC-USD':{price:d.bitcoin.usd,  chg:d.bitcoin.usd_24h_change??0},
+      'ETH-USD':{price:d.ethereum.usd, chg:d.ethereum.usd_24h_change??0}
+    };
+  }catch{ dot('dC','err'); return {}; }
 }
+
+/* Câmbio — AwesomeAPI + Frankfurter como backup */
 async function loadFx(){
   try{
-    const r=await fetchTimeout('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL', 12000);
-    const d=await r.json();
-    const u=parseFloat(d.USDBRL?.bid||0);
-    if(!u)throw 0;
+    const r = await fetchTimeout(
+      'https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL', 10000
+    );
+    const d = await r.json();
+    const u = parseFloat(d.USDBRL?.bid||0);
+    if(!u) throw 0;
     dot('dF','ok');
-    return{'BRL=X':{price:u,chg:parseFloat(d.USDBRL?.pctChange||0)},'EURBRL=X':{price:parseFloat(d.EURBRL?.bid||0),chg:parseFloat(d.EURBRL?.pctChange||0)}};
-  }catch{dot('dF','err');return{};}
+    return{
+      'BRL=X':   {price:u,                             chg:parseFloat(d.USDBRL?.pctChange||0)},
+      'EURBRL=X':{price:parseFloat(d.EURBRL?.bid||0), chg:parseFloat(d.EURBRL?.pctChange||0)}
+    };
+  }catch{}
+  try{
+    const r = await fetchTimeout('https://api.frankfurter.app/latest?from=USD&to=BRL', 8000);
+    const d = await r.json();
+    const u = d?.rates?.BRL;
+    if(!u) throw 0;
+    dot('dF','warn');
+    return{'BRL=X':{price:u,chg:0},'EURBRL=X':{price:0,chg:0}};
+  }catch{ dot('dF','err'); return {}; }
 }
 
 async function fetchAll(){
-  if(S.loading)return;
+  if(S.loading) return;
   S.loading=true;
   document.getElementById('fab').classList.add('spin');
-  document.getElementById('stxt').textContent='Conectando ao servidor…';
-  // Mostrar aviso de espera após 5 segundos
-  window._wt1 = setTimeout(()=>{
-    if(S.loading) document.getElementById('stxt').textContent='⏳ Servidor acordando, aguarde ~30s…';
-  }, 5000);
-  window._wt2 = setTimeout(()=>{
-    if(S.loading) document.getElementById('stxt').textContent='⏳ Carregando cotações (pode levar até 60s na primeira vez)…';
-  }, 20000);
-  const[loc,cg,fx]=await Promise.all([loadLocal(),loadCG(),loadFx()]);
-  let ind;
-  if(loc){
-    ind=loc;
-    if(cg['BTC-USD'])ind['BTC-USD']=cg['BTC-USD'];
-    if(cg['ETH-USD'])ind['ETH-USD']=cg['ETH-USD'];
-  }else{
-    ind=await loadProxy();
+  document.getElementById('stxt').textContent='Conectando…';
+
+  // CoinGecko e câmbio em paralelo — não dependem do servidor
+  const cgPromise = loadCG();
+  const fxPromise = loadFx();
+
+  // Índices: servidor local → YF direto → proxy
+  let ind = null;
+
+  if(!IS_FILE){
+    document.getElementById('stxt').textContent='🌐 Buscando do servidor…';
+    ind = await loadLocal();
   }
-  S.i=ind;S.c=cg;S.f=fx;S.cd=REFRESH;
-  const ts=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
+
+  if(!ind || !Object.keys(ind).length){
+    document.getElementById('stxt').textContent='⏳ Buscando via Yahoo Finance…';
+    ind = await loadYFDirect();
+  }
+
+  if(!ind || !Object.keys(ind).length){
+    document.getElementById('stxt').textContent='⏳ Tentando via proxy CORS…';
+    ind = await loadProxy();
+  }
+
+  const [cg, fx] = await Promise.all([cgPromise, fxPromise]);
+
+  // Injeta cripto nos índices
+  if(cg['BTC-USD']) (ind=ind||{})['BTC-USD']=cg['BTC-USD'];
+  if(cg['ETH-USD']) (ind=ind||{})['ETH-USD']=cg['ETH-USD'];
+
+  S.i=ind||{}; S.c=cg; S.f=fx; S.cd=REFRESH;
+
+  const ts = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',timeZone:'America/Sao_Paulo'});
   document.getElementById('ct').textContent=ts;
-  document.getElementById('stxt').textContent='Atualizado às '+ts+' (BRT)';
-  renderHero();renderInd();renderTape();
-  clearTimeout(window._wt1); clearTimeout(window._wt2);
-  toast('✅ Dados atualizados');
+  const ok = Object.keys(S.i).length;
+  document.getElementById('stxt').textContent = ok
+    ? 'Atualizado às '+ts+' (BRT)'
+    : '⚠️ Sem dados — tente novamente';
+
+  renderHero(); renderInd(); renderTape();
+  toast(ok ? '✅ Dados atualizados' : '⚠️ Sem dados de índices');
   S.loading=false;
   document.getElementById('fab').classList.remove('spin');
 }
