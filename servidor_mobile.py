@@ -109,13 +109,25 @@ def loop_atualizacao() -> None:
 
 @app.route("/api/quotes")
 def api_quotes():
-    _startup_done.wait(timeout=90)
+    # Não bloqueia: retorna cache imediatamente (mesmo que parcial).
+    # O cliente faz retry via /api/ready se necessário.
     with _lock:
         return jsonify({
             "data":       _cache["data"],
             "updated_at": _cache["updated_at"],
             "success":    _cache["success"],
             "total":      _cache["total"],
+            "ready":      _startup_done.is_set(),
+        })
+
+
+@app.route("/api/ready")
+def api_ready():
+    """Endpoint leve para polling de cold start."""
+    with _lock:
+        return jsonify({
+            "ready":   _startup_done.is_set(),
+            "success": _cache["success"],
         })
 
 
@@ -157,3 +169,4 @@ if __name__ == "__main__":
     _startup_done.wait(timeout=90)
     log.info("Pronto! Porta %d", PORT)
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
+
