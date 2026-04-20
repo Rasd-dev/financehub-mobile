@@ -204,11 +204,15 @@ def static_files(filename):
     return send_from_directory(str(Path(__file__).parent), filename)
 
 
+# Inicia a thread no nível do módulo — funciona com gunicorn e python direto
+log.info("Iniciando FinanceHub Mobile...")
+_bg_thread = threading.Thread(target=loop_atualizacao, daemon=True)
+_bg_thread.start()
+
 if __name__ == "__main__":
-    log.info("Iniciando FinanceHub Mobile...")
-    threading.Thread(target=loop_atualizacao, daemon=True).start()
     _startup_done.wait(timeout=120)
     log.info("Pronto! Porta %d", PORT)
     app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
+
 
 
